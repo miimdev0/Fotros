@@ -1,0 +1,12 @@
+{
+  "appId": "io.github.miimdev0.fetros",
+  "appName": "فطرس",
+  "webDir": "fetros",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  }
+}
