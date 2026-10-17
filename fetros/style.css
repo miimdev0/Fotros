@@ -903,3 +903,7 @@ html[data-motion='none'] .particle { display: none; }
 @media print {
   .bottom-nav, .fab, .topbar, .toast-root { display: none !important; }
 }
+
+/* Text size setting: scales body text only (headings keep their sizes). */
+html[data-text='large'] body { font-size: 17px; }
+html[data-text='xlarge'] body { font-size: 19px; }

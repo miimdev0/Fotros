@@ -79,6 +79,7 @@
     theme: 'dark',                 // dark | light | system
     accent: 'gold',                // gold | sunrise | lapis
     motion: 'full',                // full | subtle | none
+    textSize: 'normal',            // normal | large | xlarge (body text)
     numeralsPersian: 'fa',         // fa | en  (Persian & Hijri dates)
     numeralsGregorian: 'en',       // en | fa  (Gregorian dates)
     locationMode: 'city',          // city | custom | gps
@@ -104,6 +105,7 @@
     theme: ['dark', 'light', 'system'],
     accent: ['gold', 'sunrise', 'lapis'],
     motion: ['full', 'subtle', 'none'],
+    textSize: ['normal', 'large', 'xlarge'],
     numeralsPersian: ['fa', 'en'],
     numeralsGregorian: ['en', 'fa'],
     locationMode: ['city', 'custom', 'gps'],
