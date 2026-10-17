@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+# Local build output (Capacitor/Android). Never commit APKs or keystores.
+android/
+app/build/
+*.apk
+*.aab
+*.keystore
+*.jks

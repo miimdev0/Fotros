@@ -1,0 +1,16 @@
+{
+  "name": "fetros",
+  "version": "1.0.0",
+  "private": true,
+  "description": "فطرس — Persian-first offline calendar and daily companion (static PWA, Capacitor-ready). Node is used only for tests; the website has no build step.",
+  "scripts": {
+    "test": "node --test fetros/tests/*.test.js",
+    "serve": "python3 -m http.server 8080 --bind 0.0.0.0 --directory fetros"
+  },
+  "devDependencies": {
+    "adhan": "^4.4.6",
+    "fake-indexeddb": "^6.2.6",
+    "jalaali-js": "^2.0.1",
+    "jsdom": "^30.1.3"
+  }
+}

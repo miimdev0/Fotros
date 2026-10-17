@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark" data-accent="gold" data-motion="full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="فطرس — تقویم شمسی، میلادی و قمری، اوقات شرعی، قبله‌نما، یادآورها و یادداشت‌ها؛ همراه لحظه‌های زندگی. بدون حساب کاربری و بدون تبلیغ.">
+  <meta name="theme-color" content="#101114">
+  <meta name="color-scheme" content="dark light">
+  <meta name="application-name" content="فطرس">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="فطرس">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>فطرس · همراه لحظه‌های زندگی</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preload" href="fonts/Vazirmatn-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#view">رفتن به محتوا</a>
+
+  <!-- Shared SVG definitions: the FETROS emblem and its gradient. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="fx-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#F5C451"/>
+        <stop offset="1" stop-color="#FF7A35"/>
+      </linearGradient>
+      <symbol id="fx-emblem" viewBox="0 0 512 512">
+        <path d="M77.5 365 A190 190 0 1 1 434.5 365" fill="none" stroke="url(#fx-grad)" stroke-width="14" stroke-linecap="round"/>
+        <path d="M146 300 A110 110 0 0 1 366 300 Z" fill="url(#fx-grad)"/>
+        <rect x="116" y="308" width="280" height="12" rx="6" fill="url(#fx-grad)"/>
+        <g stroke="url(#fx-grad)" stroke-width="12" stroke-linecap="round" fill="none">
+          <path d="M382.4 227 L401.5 216"/>
+          <path d="M329 173.6 L340 154.5"/>
+          <path d="M256 154 L256 132"/>
+          <path d="M183 173.6 L172 154.5"/>
+          <path d="M129.6 227 L110.5 216"/>
+        </g>
+        <circle cx="256" cy="110" r="9" fill="url(#fx-grad)"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- Splash screen -->
+  <div id="splash" class="splash" role="status" aria-live="polite">
+    <div class="splash-inner">
+      <svg class="splash-mark" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><use href="#fx-emblem"/></svg>
+      <div class="splash-name">فطرس</div>
+      <div class="splash-tag">همراه لحظه‌های زندگی</div>
+    </div>
+  </div>
+
+  <div class="app" id="app">
+    <header class="topbar">
+      <a class="brand" href="#/home" aria-label="فطرس — خانه">
+        <svg class="brand-mark sm" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><use href="#fx-emblem"/></svg>
+        <span class="brand-text">فطرس</span>
+      </a>
+      <div class="topbar-end">
+        <button type="button" id="install-btn" class="chip-btn" data-action="install-app" hidden>نصب برنامه</button>
+        <span id="net-chip" class="net-chip" role="status" aria-label="وضعیت اتصال">
+          <span class="dot" aria-hidden="true"></span><span class="chip-text">آنلاین</span>
+        </span>
+      </div>
+    </header>
+
+    <noscript>
+      <div class="notice warn">برای استفاده از فطرس، جاوااسکریپت مرورگر باید فعال باشد.</div>
+    </noscript>
+
+    <main id="view" class="view" tabindex="-1" aria-live="polite"></main>
+
+    <button type="button" id="fab" class="fab" aria-label="افزودن سریع" title="افزودن سریع">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+
+    <nav class="bottom-nav" aria-label="ناوبری اصلی">
+      <a href="#/home" data-route="home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg><span>خانه</span></a>
+      <a href="#/calendar" data-route="calendar"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17h2"/></svg><span>تقویم</span></a>
+      <a href="#/prayer" data-route="prayer"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.5h18"/><path d="M6.5 17.5a5.5 5.5 0 0 1 11 0"/><path d="M12 5v3M5.6 8.6l1.6 1.6M18.4 8.6l-1.6 1.6"/></svg><span>اوقات شرعی</span></a>
+      <a href="#/tools" data-route="tools"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg><span>ابزارها</span></a>
+      <a href="#/settings" data-route="settings"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 14.6a1.6 1.6 0 0 0 .3 1.7l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.7-.3 1.6 1.6 0 0 0-1 1.5V20a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.7.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.7 1.6 1.6 0 0 0-1.5-1H4a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.7.3H10a1.6 1.6 0 0 0 1-1.5V4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.7-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.7V10a1.6 1.6 0 0 0 1.5 1H20a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span>تنظیمات</span></a>
+    </nav>
+  </div>
+
+  <div id="sheet-root"></div>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+  <!-- Data and logic. Classic scripts keep the app runnable without a build step. -->
+  <script src="js/storage.js"></script>
+  <script src="js/calendar-engine.js"></script>
+  <script src="js/data/occasions.js"></script>
+  <script src="js/data/cities.js"></script>
+  <script src="js/prayer-engine.js"></script>
+  <script src="js/location.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/view-home.js"></script>
+  <script src="js/view-calendar.js"></script>
+  <script src="js/view-prayer.js"></script>
+  <script src="js/view-tools.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
