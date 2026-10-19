@@ -15,7 +15,7 @@
  */
 'use strict';
 
-var CACHE_VERSION = '1.2.0';
+var CACHE_VERSION = '3.0.0';
 var CACHE_NAME = 'fetros-cache-' + CACHE_VERSION;
 
 // Paths are relative to the service worker scope (the folder that holds index.html).
@@ -33,6 +33,8 @@ var APP_SHELL = [
   'js/location.js',
   'js/ui.js',
   'js/data/features.js',
+  'js/data/umm-alqura.js',
+  'js/view-search.js',
   'js/fx.js',
   'js/view-home.js',
   'js/view-calendar.js',

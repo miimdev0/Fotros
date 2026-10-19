@@ -1259,3 +1259,15 @@ html[data-motion='none'] .ripple { display: none; }
 .accent-chip { background: var(--surface-2); color: var(--text); border: 1px solid var(--rim); }
 
 .fab { position: fixed; overflow: hidden; transition: transform .35s var(--ease), box-shadow .4s var(--ease); }
+
+/* ---- v3.0: global search ---- */
+.search-card { display: grid; gap: 10px; }
+.search-card input[type="search"] { width: 100%; }
+.search-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.search-results:empty { display: none; }
+.search-item { border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--rim); }
+.search-link { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 12px 14px; color: var(--text); text-decoration: none; border-radius: var(--radius-sm); }
+.search-link:hover, .search-link:focus-visible { border-color: var(--a1); outline: none; }
+.search-link:focus-visible { box-shadow: 0 0 0 2px var(--a1); }
+.search-title { font-weight: 700; }
+.search-text { flex-basis: 100%; overflow-wrap: anywhere; }

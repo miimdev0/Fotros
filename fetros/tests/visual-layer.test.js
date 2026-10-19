@@ -107,5 +107,5 @@ test('package.json version matches APP_VERSION', function () {
   const pkg = JSON.parse(read('../package.json'));
   const appVersion = /APP_VERSION = '([^']+)'/.exec(read('script.js'))[1];
   assert.equal(pkg.version, appVersion);
-  assert.equal(appVersion, '1.2.0');
+  assert.equal(appVersion, '3.0.0');
 });

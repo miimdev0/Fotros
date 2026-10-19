@@ -19,7 +19,7 @@
   'use strict';
 
   var NS = global.FETROS = global.FETROS || {};
-  var APP_VERSION = '1.2.0'; // keep in sync with CACHE_VERSION in sw.js
+  var APP_VERSION = '3.0.0'; // keep in sync with CACHE_VERSION in sw.js
   NS.APP_VERSION = APP_VERSION;
 
   var UI = NS.UI;
@@ -34,7 +34,8 @@
     dhikr: { nav: 'tools' },
     qibla: { nav: 'tools' },
     meds: { nav: 'tools' },
-    weather: { nav: 'tools' }
+    weather: { nav: 'tools' },
+    search: { nav: 'tools' }
   };
   var FAB_HIDDEN = { settings: true, dhikr: true, qibla: true };
 
@@ -135,6 +136,7 @@
 
   function applyAppearance() {
     var s = UI.settings();
+    if (NS.Calendar && NS.Calendar.setHijriMethod) NS.Calendar.setHijriMethod(s.hijriMethod);
     var root = doc.documentElement;
     var systemDark = !!(global.matchMedia && global.matchMedia('(prefers-color-scheme: dark)').matches);
     var dark = s.theme === 'dark' || (s.theme === 'system' && systemDark);
@@ -271,10 +273,34 @@
     return Promise.resolve();
   }
 
+  var BACKUP_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
+
+  // Gently suggests a backup once a week, at most once a day, and only when there is data to save.
+  function checkBackup() {
+    var s = UI.settings();
+    if (!s.backupReminder) return Promise.resolve();
+    var rt = NS.Store.getRuntime();
+    var now = Date.now();
+    var today = UI.localIsoDate(now);
+    if (rt.backupNoticeDay === today) return Promise.resolve();
+    if (rt.lastExportAt && now - rt.lastExportAt < BACKUP_EVERY_MS) return Promise.resolve();
+    return Promise.all([NS.Store.getAll('tasks'), NS.Store.getAll('notes'), NS.Store.getAll('events'), NS.Store.getAll('reminders')])
+      .then(function (r) {
+        var count = r[0].length + r[1].length + r[2].length + r[3].length;
+        if (!count) return;
+        var msg = rt.lastExportAt
+          ? 'بیش از یک هفته از آخرین پشتیبان گذشته است. از «تنظیمات» یک فایل پشتیبان بگیرید.'
+          : 'هنوز پشتیبان نگرفته‌اید. از «تنظیمات» یک فایل پشتیبان بگیرید.';
+        UI.toast(msg, { type: 'info', timeout: 9000 });
+        NS.Store.setRuntime({ backupNoticeDay: today });
+      });
+  }
+
   function runChecks() {
     return Promise.all([
       NS.Tools.tick().catch(function (e) { console.warn(e); }),
       checkPrayers().catch(function (e) { console.warn(e); }),
+      checkBackup().catch(function (e) { console.warn(e); }),
       NS.Native.maybeSync().catch(function (e) { console.warn(e); })
     ]);
   }
@@ -391,7 +417,10 @@
         '<p class="small">موقعیت فعلی: <strong>' + UI.esc(loc.name) + '</strong> · روش: ' + UI.esc(NS.Prayer.METHODS[s.method] ? NS.Prayer.METHODS[s.method].name : '') + '</p>' +
         '<div class="actions-row"><a class="btn ghost sm" href="#/prayer">تغییر شهر و روش</a></div>' +
         '<div class="field"><label for="s-hijri">تصحیح تاریخ قمری (روز)</label><select id="s-hijri" data-change="setting-select" data-key="hijriOffset">' +
-        selectOpts([[-2, '−۲ روز'], [-1, '−۱ روز'], [0, '۰ (جدولی)'], [1, '+۱ روز'], [2, '+۲ روز']], s.hijriOffset) + '</select>' +
+        selectOpts([[-2, '−۲ روز'], [-1, '−۱ روز'], [0, '۰ (پیش‌فرض)'], [1, '+۱ روز'], [2, '+۲ روز']], s.hijriOffset) + '</select>' +
+        '<small class="hint">تقویم قمری ام‌القری برای ۱۴۰۲ تا ۱۵۰۰ ق. است؛ خارج از این بازه از روش جدولی استفاده می‌شود.</small></div>' +
+        '<div class="field"><label for="s-hijri-method">روش تقویم قمری</label><select id="s-hijri-method" data-change="setting-select" data-key="hijriMethod">' +
+        selectOpts([['ummalqura', 'ام‌القری (رسمی)'], ['tabular', 'جدولی (حسابی)']], s.hijriMethod) + '</select>' +
         '<small class="hint">تاریخ قمری جدولی است. اگر رؤیت محلی یک یا دو روز دیرتر یا زودتر است، اینجا اصلاح کنید.</small></div>' +
         '</section>' +
 
@@ -400,6 +429,7 @@
         '<div class="actions-row"><button type="button" class="btn ghost sm" data-action="ask-notify">درخواست اجازه‌ی اعلان</button></div>' +
         toggleRow('notifyPrayer', 'اعلان اوقات نماز', 'هنگام رسیدن وقت، وقتی برنامه باز است یا مرورگر اعلان را نشان می‌دهد.', s.notifyPrayer) +
         toggleRow('notifyReminders', 'اعلان یادآورها', 'یادآورهای ثبت‌شده هنگام زمان مقرر.', s.notifyReminders) +
+        toggleRow('backupReminder', 'یادآور پشتیبان هفتگی', 'هر هفته، وقتی برنامه باز است، یادآوری می‌شود از داده‌ها پشتیبان بگیرید.', s.backupReminder) +
         toggleRow('notifyMeds', 'یادآور دارو', 'یادآوری داخل برنامه؛ تضمین‌شده نیست.', s.notifyMeds) +
         toggleRow('azanEnabled', 'پخش اذان (فایل شما)', 'فقط وقتی برنامه باز است. فایل در بخش «اوقات شرعی» انتخاب می‌شود.', s.azanEnabled) +
         toggleRow('vibrate', 'لرزش', 'بازخورد لرزشی روی دکمه‌ها و یادآورها (اگر دستگاه پشتیبانی کند).', s.vibrate) +
@@ -540,7 +570,11 @@
     return NS.Store.buildExport(APP_VERSION).then(function (obj) {
       var stamp = UI.localIsoDate(Date.now());
       return saveText('fetros-backup-' + stamp + '.json', JSON.stringify(obj, null, 2), 'application/json')
-        .then(function (ok) { if (ok) UI.toast('فایل پشتیبان ساخته شد.', { type: 'success' }); });
+        .then(function (ok) {
+          if (!ok) return;
+          NS.Store.setRuntime({ lastExportAt: Date.now() });
+          UI.toast('فایل پشتیبان ساخته شد.', { type: 'success' });
+        });
     });
   });
 

@@ -154,6 +154,15 @@ and no build. Global state lives under `window.FETROS`.
 
 ---
 
+## Version 3.0: Umm al-Qura calendar, global search, backup reminder
+
+- **Hijri calendar:** the default method is now the Umm al-Qura month table for **1402–1500 AH**, in `fetros/js/data/umm-alqura.js`. It was taken from the moment-hijri package (MIT) and checked day by day against it (35,084 days, 0 mismatches). Outside that range, and when the user picks it, the app uses the tabular (arithmetic) calendar. The setting is **روش تقویم قمری** in Settings. The tabular method can differ by one day from Umm al-Qura, so the official day may still differ from either method. The offset setting still applies on top.
+- **Global search:** `#/search` (linked from the Tools page) searches tasks, notes, reminders, events and medication reminders on this device. It ignores Arabic/Persian letter variants and Latin vs Persian digits.
+- **Weekly backup reminder:** the setting **یادآور پشتیبان هفتگی** (on by default) shows a notice at most once a day while the app is open, when no backup has been saved in the last 7 days. Saving a JSON backup records the time.
+- Version 3.0.0 updates `APP_VERSION`, the service-worker cache (`fetros-cache-3.0.0`) and `package.json`.
+- Still open: the holiday data is sample only, and `fonts/Rokh.ttf` is not bundled (see the Rokh notes).
+
+---
 ## Version 1.2: visual layer and the Rokh font
 
 - New motion layer in `fetros/js/fx.js`: loader counter, reveal on scroll, count-up numbers, magnetic buttons, card tilt, ripples, a sliding nav pill, pointer parallax, a scroll progress bar, the feature carousel, and the lightbox.

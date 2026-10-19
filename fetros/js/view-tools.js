@@ -70,6 +70,7 @@
   /* ------------------------------ Tools index ------------------------------ */
 
   var TOOL_CARDS = [
+    { route: '#/search', icon: 'search', title: 'جستجوی سراسری', text: 'یافتن کار، یادداشت، یادآور، رویداد و دارو' },
     { route: '#/organizer/tasks', icon: 'task', title: 'وظایف و یادداشت‌ها', text: 'کارهای روزانه و یادداشت‌های سریع' },
     { route: '#/organizer/reminders', icon: 'alarm', title: 'یادآورها', text: 'زمان‌بندی یادآور با تکرار' },
     { route: '#/dhikr', icon: 'beads', title: 'تسبیح و ذکر', text: 'شمارنده‌ی ذکر با هدف و تاریخچه' },

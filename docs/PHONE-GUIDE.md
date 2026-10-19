@@ -199,6 +199,15 @@ your key and ends with `-signed.apk`.
 
 ---
 
+## Version 3.0: what is new
+
+- **Calendar:** dates from 1402 to 1500 AH now follow the Umm al-Qura calendar, the one most used in Saudi Arabia. Other years use the simpler calculation. To change it, open **تنظیمات** and find **روش تقویم قمری**.
+- **Search:** open **ابزارها → جستجوی سراسری** and type a word. It finds tasks, notes, reminders, events and medication reminders on your phone. Nothing is sent anywhere.
+- **Backup reminder:** once a week, while the app is open, FETROS suggests saving a backup. Save one from **تنظیمات → ذخیره‌ی پشتیبان (JSON)**. To turn the reminder off, use **یادآور پشتیبان هفتگی** in settings.
+- **Holidays are still sample data.** Official holiday dates are not in the app yet. Check the official list before you rely on them.
+
+---
+
 ## Version 1.2: the new look, and the Rokh font
 
 Version 1.2 adds an animated background, a new loader, a new app icon, a feature carousel with a lightbox, an install call-to-action (CTA), and a footer. Motion can be turned down in **تنظیمات > ظاهر > شدت انیمیشن** (کامل, کم, or none).
