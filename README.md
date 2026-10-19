@@ -154,6 +154,14 @@ and no build. Global state lives under `window.FETROS`.
 
 ---
 
+## Version 1.2: visual layer and the Rokh font
+
+- New motion layer in `fetros/js/fx.js`: loader counter, reveal on scroll, count-up numbers, magnetic buttons, card tilt, ripples, a sliding nav pill, pointer parallax, a scroll progress bar, the feature carousel, and the lightbox.
+- Three motion levels (کامل, کم, none), plus the OS reduced-motion preference.
+- Feature showcase data lives in `fetros/js/data/features.js`. Artwork is drawn in code (no screenshots).
+- Icon: `fetros/icons/icon.svg` (original artwork) rendered to `icon-192.png` and `icon-512.png`.
+- Display font: `fonts/Rokh.ttf` is loaded when present, with Vazirmatn as the fallback. Rokh is a paid font and is **not** bundled. See the phone guide for how to add a licensed copy.
+
 ## Licences and attribution
 
 - **Code:** original work for this project. No third-party JavaScript libraries are shipped in

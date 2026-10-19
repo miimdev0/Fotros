@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="فطرس — تقویم شمسی، میلادی و قمری، اوقات شرعی، قبله‌نما، یادآورها و یادداشت‌ها؛ همراه لحظه‌های زندگی. بدون حساب کاربری و بدون تبلیغ.">
-  <meta name="theme-color" content="#101114">
+  <meta name="theme-color" content="#0E0F12">
   <meta name="color-scheme" content="dark light">
   <meta name="application-name" content="فطرس">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,31 +25,40 @@
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
     <defs>
       <linearGradient id="fx-grad" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#F5C451"/>
+        <stop offset="0" stop-color="#FFE08A"/>
+        <stop offset="0.5" stop-color="#F5C451"/>
         <stop offset="1" stop-color="#FF7A35"/>
       </linearGradient>
       <symbol id="fx-emblem" viewBox="0 0 512 512">
-        <path d="M77.5 365 A190 190 0 1 1 434.5 365" fill="none" stroke="url(#fx-grad)" stroke-width="14" stroke-linecap="round"/>
-        <path d="M146 300 A110 110 0 0 1 366 300 Z" fill="url(#fx-grad)"/>
-        <rect x="116" y="308" width="280" height="12" rx="6" fill="url(#fx-grad)"/>
-        <g stroke="url(#fx-grad)" stroke-width="12" stroke-linecap="round" fill="none">
-          <path d="M382.4 227 L401.5 216"/>
-          <path d="M329 173.6 L340 154.5"/>
-          <path d="M256 154 L256 132"/>
-          <path d="M183 173.6 L172 154.5"/>
-          <path d="M129.6 227 L110.5 216"/>
+        <ellipse cx="256" cy="262" rx="188" ry="66" transform="rotate(-14 256 262)" fill="none" stroke="url(#fx-grad)" stroke-opacity=".5" stroke-width="12"/>
+        <path d="M134 300 A122 122 0 0 1 378 300 Z" fill="url(#fx-grad)"/>
+        <rect x="98" y="302" width="316" height="14" rx="7" fill="url(#fx-grad)"/>
+        <g stroke="url(#fx-grad)" stroke-width="14" stroke-linecap="round" fill="none">
+          <path d="M126 225 L98 209"/><path d="M181 170 L165 142"/><path d="M256 150 L256 118"/>
+          <path d="M331 170 L347 142"/><path d="M386 225 L414 209"/>
         </g>
-        <circle cx="256" cy="110" r="9" fill="url(#fx-grad)"/>
+        <circle cx="256" cy="86" r="10" fill="url(#fx-grad)"/>
       </symbol>
     </defs>
   </svg>
 
-  <!-- Splash screen -->
+  <!-- Animated background (decorative; pointer parallax is driven by js/fx.js) -->
+  <div class="bg-scene" aria-hidden="true">
+    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+    <span class="ring r1"></span><span class="ring r2"></span>
+    <span class="grain"></span>
+  </div>
+
+  <!-- Loader: the emblem is drawn in, and the counter runs while the app starts (js/fx.js). -->
   <div id="splash" class="splash" role="status" aria-live="polite">
+    <div class="splash-orb" aria-hidden="true"></div>
     <div class="splash-inner">
       <svg class="splash-mark" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><use href="#fx-emblem"/></svg>
       <div class="splash-name">فطرس</div>
       <div class="splash-tag">همراه لحظه‌های زندگی</div>
+      <div class="splash-meter" aria-hidden="true"><span id="splash-bar"></span></div>
+      <div class="splash-pct" id="splash-pct" aria-hidden="true">۰٪</div>
+      <span class="sr-only">در حال آماده‌سازی فطرس</span>
     </div>
   </div>
 
@@ -97,6 +106,8 @@
   <script src="js/prayer-engine.js"></script>
   <script src="js/location.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/data/features.js"></script>
+  <script src="js/fx.js"></script>
   <script src="js/view-home.js"></script>
   <script src="js/view-calendar.js"></script>
   <script src="js/view-prayer.js"></script>

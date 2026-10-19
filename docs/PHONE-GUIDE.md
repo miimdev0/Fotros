@@ -199,6 +199,18 @@ your key and ends with `-signed.apk`.
 
 ---
 
+## Version 1.2: the new look, and the Rokh font
+
+Version 1.2 adds an animated background, a new loader, a new app icon, a feature carousel with a lightbox, an install call-to-action (CTA), and a footer. Motion can be turned down in **تنظیمات > ظاهر > شدت انیمیشن** (کامل, کم, or none).
+
+**The Rokh font is not in the project yet.** Rokh is a paid font, so it is not included or downloaded for you. To use it:
+
+1. Buy or obtain a licence that allows **web and app embedding**. Check the licence text before you continue.
+2. Save the font file as `Rokh.ttf` and put it in the `fonts/` folder of the project, next to `Vazirmatn-Variable.woff2`.
+3. Publish the change (upload it on GitHub, or let Claude add it). Reload the app.
+
+Until the file exists, the app uses Vazirmatn for every line, and nothing breaks.
+
 ## Important notes about APKs
 
 - **Uninstalling FETROS deletes its local data** (tasks, notes, settings). Save a backup first

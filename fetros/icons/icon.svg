@@ -1,26 +1,62 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- FETROS app icon: original design. Rounded charcoal tile with a gold-to-sunrise
-     horizon emblem (a sun rising over an arc of the sky). The emblem is scaled to
-     0.9 about the centre so it stays inside the adaptive-icon safe zone. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- FETROS app icon (original artwork). Full-bleed square; the emblem sits inside the
+       maskable safe zone (a circle of radius 205 around the centre), so launchers can crop it safely. -->
   <defs>
-    <linearGradient id="fx-grad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#F5C451"/>
+    <radialGradient id="bg" cx="50%" cy="38%" r="78%">
+      <stop offset="0" stop-color="#3B2E22"/>
+      <stop offset="0.5" stop-color="#1A1B1F"/>
+      <stop offset="1" stop-color="#0A0B0D"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFE08A"/>
+      <stop offset="0.45" stop-color="#F5C451"/>
       <stop offset="1" stop-color="#FF7A35"/>
     </linearGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#FF9A4D" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#FF7A35" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5"/>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="112" ry="112" fill="#101114"/>
-  <g transform="translate(25.6 25.6) scale(0.9)">
-    <path d="M77.5 365 A190 190 0 1 1 434.5 365" fill="none" stroke="url(#fx-grad)" stroke-width="14" stroke-linecap="round"/>
-    <path d="M146 300 A110 110 0 0 1 366 300 Z" fill="url(#fx-grad)"/>
-    <rect x="116" y="308" width="280" height="12" rx="6" fill="url(#fx-grad)"/>
-    <g stroke="url(#fx-grad)" stroke-width="12" stroke-linecap="round" fill="none">
-      <path d="M382.4 227 L401.5 216"/>
-      <path d="M329 173.6 L340 154.5"/>
-      <path d="M256 154 L256 132"/>
-      <path d="M183 173.6 L172 154.5"/>
-      <path d="M129.6 227 L110.5 216"/>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#FFF8EA" stroke-opacity="0.05" stroke-width="2"/>
+  <circle cx="256" cy="256" r="196" fill="none" stroke="#FFF8EA" stroke-opacity="0.07" stroke-width="2"/>
+
+  <!-- Sunrise glow and orbit -->
+  <circle cx="256" cy="300" r="190" fill="url(#sunGlow)"/>
+  <ellipse cx="256" cy="262" rx="188" ry="66" transform="rotate(-14 256 262)" fill="none" stroke="url(#gold)" stroke-opacity="0.42" stroke-width="3"/>
+
+  <!-- Rising sun, horizon and rays -->
+  <g filter="url(#glow)">
+    <path d="M134 300 A122 122 0 0 1 378 300 Z" fill="url(#gold)"/>
+    <rect x="98" y="302" width="316" height="14" rx="7" fill="url(#gold)"/>
+    <g stroke="url(#gold)" stroke-width="12" stroke-linecap="round" fill="none">
+      <path d="M126 225 L98 209"/>
+      <path d="M181 170 L165 142"/>
+      <path d="M256 150 L256 118"/>
+      <path d="M331 170 L347 142"/>
+      <path d="M386 225 L414 209"/>
     </g>
-    <circle cx="256" cy="110" r="9" fill="url(#fx-grad)"/>
   </g>
+
+  <!-- Night sky accents: a star, a sparkle and a small moon -->
+  <g filter="url(#glow)">
+    <circle cx="256" cy="86" r="7" fill="#FFF8EA"/>
+    <path d="M150 128 l5 -14 l5 14 l14 5 l-14 5 l-5 14 l-5 -14 l-14 -5 z" fill="#FFF8EA" fill-opacity="0.9"/>
+    <mask id="crescent"><rect width="512" height="512" fill="#fff"/><circle cx="144" cy="182" r="26" fill="#000"/></mask>
+    <circle cx="124" cy="192" r="34" fill="url(#gold)" mask="url(#crescent)" opacity="0.94"/>
+  </g>
+  <circle cx="340" cy="112" r="3" fill="#FFF8EA" fill-opacity="0.7"/>
+  <circle cx="392" cy="176" r="2.5" fill="#FFE08A" fill-opacity="0.8"/>
+
+  <!-- Soft reflection under the horizon -->
+  <rect x="150" y="324" width="212" height="6" rx="3" fill="#FFE08A" fill-opacity="0.35" filter="url(#soft)"/>
 </svg>

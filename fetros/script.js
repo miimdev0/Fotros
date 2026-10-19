@@ -19,7 +19,7 @@
   'use strict';
 
   var NS = global.FETROS = global.FETROS || {};
-  var APP_VERSION = '1.1.0'; // keep in sync with CACHE_VERSION in sw.js
+  var APP_VERSION = '1.2.0'; // keep in sync with CACHE_VERSION in sw.js
   NS.APP_VERSION = APP_VERSION;
 
   var UI = NS.UI;
@@ -680,7 +680,8 @@
     registerServiceWorker();
     var splashStart = Date.now();
     var reduce = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var minSplash = reduce ? 250 : 1100;
+    var minSplash = reduce ? 250 : 1400;
+    if (NS.Fx) NS.Fx.runSplash(minSplash);
 
     NS.Store.init().then(function () {
       if (NS.Store.mode() === 'none') UI.toast('ذخیره‌سازی در این مرورگر در دسترس نیست.', { type: 'error' });

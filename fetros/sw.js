@@ -15,7 +15,7 @@
  */
 'use strict';
 
-var CACHE_VERSION = '1.1.0';
+var CACHE_VERSION = '1.2.0';
 var CACHE_NAME = 'fetros-cache-' + CACHE_VERSION;
 
 // Paths are relative to the service worker scope (the folder that holds index.html).
@@ -32,6 +32,8 @@ var APP_SHELL = [
   'js/prayer-engine.js',
   'js/location.js',
   'js/ui.js',
+  'js/data/features.js',
+  'js/fx.js',
   'js/view-home.js',
   'js/view-calendar.js',
   'js/view-prayer.js',
