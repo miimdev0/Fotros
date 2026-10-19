@@ -101,3 +101,29 @@ test('nextPrayer returns the next obligatory prayer, not sunrise or sunset', fun
   assert.notEqual(res.item.key, 'sunset');
   assert.ok(res.item.ms > Date.parse('2026-10-17T15:00:00Z'));
 });
+
+// Jafari uses Fajr 16°, Isha 14° and Maghrib at sun altitude −4°. adhan can reproduce the two angles,
+// so Fajr and Isha are compared with it. The −4° Maghrib has no adhan equivalent and is not compared.
+test('Jafari fajr and isha agree with adhan using the same angles (16 and 14)', function () {
+  let compared = 0;
+  CITIES.forEach(function (city) {
+    DATES.forEach(function (ymd) {
+      const ours = P.computeDay({ lat: city.lat, lon: city.lon, tz: city.tz,
+        y: ymd[0], m: ymd[1], d: ymd[2], method: 'jafari', asr: 'shafi', adjust: {} });
+      const params = new adhan.CalculationParameters('Other');
+      params.fajrAngle = 16;
+      params.ishaAngle = 14;
+      params.madhab = adhan.Madhab.Shafi;
+      const ref = new adhan.PrayerTimes(new adhan.Coordinates(city.lat, city.lon),
+        new Date(Date.UTC(ymd[0], ymd[1] - 1, ymd[2])), params);
+      const refMs = { fajr: ref.fajr.getTime(), isha: ref.isha.getTime() };
+      ours.items.forEach(function (item) {
+        if (item.key !== 'fajr' && item.key !== 'isha') return;
+        const diffMin = Math.abs(item.ms - refMs[item.key]) / 60000;
+        assert.ok(diffMin <= 1.01, city.name + ' jafari ' + ymd.join('-') + ' ' + item.key + ' off by ' + diffMin);
+        compared++;
+      });
+    });
+  });
+  assert.equal(compared, CITIES.length * DATES.length * 2);
+});

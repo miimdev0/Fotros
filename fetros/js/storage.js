@@ -79,6 +79,7 @@
     theme: 'dark',                 // dark | light | system
     accent: 'gold',                // gold | sunrise | lapis
     motion: 'full',                // full | subtle | none
+    textSize: 'normal',            // normal | large | xlarge (body text)
     numeralsPersian: 'fa',         // fa | en  (Persian & Hijri dates)
     numeralsGregorian: 'en',       // en | fa  (Gregorian dates)
     locationMode: 'city',          // city | custom | gps
@@ -88,9 +89,11 @@
     asr: 'shafi',                  // shafi | hanafi
     adjust: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, sunset: 0, maghrib: 0, isha: 0 },
     hijriOffset: 0,                // -2 … +2 days
+    hijriMethod: 'ummalqura',      // ummalqura | tabular (tabular is the arithmetic fallback)
     notifyPrayer: false,
     notifyReminders: true,
     notifyMeds: false,
+    backupReminder: true,          // weekly reminder to save a backup while the app is open
     azanEnabled: false,            // plays user-provided audio when a prayer time arrives (app open)
     vibrate: true,
     dhikrSound: false,
@@ -104,6 +107,8 @@
     theme: ['dark', 'light', 'system'],
     accent: ['gold', 'sunrise', 'lapis'],
     motion: ['full', 'subtle', 'none'],
+    hijriMethod: ['ummalqura', 'tabular'],
+    textSize: ['normal', 'large', 'xlarge'],
     numeralsPersian: ['fa', 'en'],
     numeralsGregorian: ['en', 'fa'],
     locationMode: ['city', 'custom', 'gps'],

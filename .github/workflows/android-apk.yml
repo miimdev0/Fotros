@@ -1,0 +1,192 @@
+# Builds the FETROS Android app (APK) on GitHub's free runners.
+#
+#  - Every push to main and every pull request: runs the tests, builds the APK,
+#    and keeps it as a workflow artifact (Actions tab, kept 14 days).
+#  - A version tag such as v1.1.0: also publishes a GitHub Release with the APK.
+#
+# Signing:
+#  - If the repository secrets below exist, the APK is signed with YOUR release key.
+#    Use the same key for every release, so updates install over older versions.
+#  - Without them, the APK is signed with Android's debug key. It is for testing
+#    only, and each build may use a different debug key.
+#    ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+#
+# Neither the APK nor the release is for Google Play; it is installed directly on the phone.
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install test dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+
+  build-apk:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # android-actions/setup-android@v3 fails on current runners because it asks for
+      # the retired "tools" SDK package. The GitHub runner already ships an Android SDK
+      # (ANDROID_HOME is set), so we only accept licences and add the packages we need.
+      - name: Install Android SDK components
+        run: |
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -n 1)"
+          fi
+          if [ -z "$SDKMANAGER" ] || [ ! -x "$SDKMANAGER" ]; then
+            echo "sdkmanager not found under $ANDROID_HOME" >&2
+            exit 1
+          fi
+          (yes || true) | "$SDKMANAGER" --licenses > /dev/null
+          "$SDKMANAGER" "platform-tools" "platforms;android-34" "platforms;android-35" "build-tools;34.0.0" "build-tools;35.0.0"
+
+      - name: Install Capacitor and plugins (build time only, not committed)
+        run: >
+          npm install --no-save
+          @capacitor/cli@6 @capacitor/core@6 @capacitor/android@6
+          @capacitor/local-notifications@6 @capacitor/filesystem@6 @capacitor/share@6
+
+      - name: Generate the Android project (first build only)
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
+
+      - name: Allow notifications and exact alarms in the manifest
+        run: |
+          python3 - <<'PY'
+          import re
+          path = 'android/app/src/main/AndroidManifest.xml'
+          text = open(path, encoding='utf-8').read()
+          wanted = [
+              'android.permission.POST_NOTIFICATIONS',
+              'android.permission.SCHEDULE_EXACT_ALARM',
+              'android.permission.VIBRATE',
+          ]
+          add = ''.join('    <uses-permission android:name="%s" />\n' % p for p in wanted if p not in text)
+          text, n = re.subn(r'(<manifest[^>]*>\s*\n)', lambda m: m.group(1) + add, text, count=1)
+          assert n == 1, 'manifest tag not found'
+          open(path, 'w', encoding='utf-8').write(text)
+          for p in wanted:
+              assert p in text, 'missing ' + p
+          print('manifest permissions ok')
+          PY
+
+      - name: Copy the web app into the Android project
+        run: npx cap sync android
+
+      - name: Set the version from the tag (or a CI build number)
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then VNAME="${GITHUB_REF_NAME#v}"; else VNAME="0.0.0-ci"; fi
+          sed -i -E "s/versionCode [0-9]+/versionCode ${GITHUB_RUN_NUMBER}/" android/app/build.gradle
+          sed -i -E "s/versionName \"[^\"]*\"/versionName \"${VNAME}\"/" android/app/build.gradle
+          grep -E "versionCode|versionName" android/app/build.gradle
+
+      - name: Build the APK
+        env:
+          HAS_RELEASE_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          if [ "$HAS_RELEASE_KEY" = "true" ]; then
+            ./gradlew assembleRelease --no-daemon
+          else
+            ./gradlew assembleDebug --no-daemon
+          fi
+
+      - name: Sign and collect the APK
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then LABEL="${GITHUB_REF_NAME}"; else LABEL="ci-${GITHUB_SHA::7}"; fi
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          mkdir -p out
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            "$BT/zipalign" -f -p 4 android/app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/aligned.apk"
+            "$BT/apksigner" sign \
+              --ks "$RUNNER_TEMP/release.jks" \
+              --ks-key-alias "$KEY_ALIAS" \
+              --ks-pass env:KS_PASS \
+              --key-pass env:KEY_PASS \
+              --out "out/fetros-${LABEL}.apk" "$RUNNER_TEMP/aligned.apk"
+            rm -f "$RUNNER_TEMP/release.jks" "$RUNNER_TEMP/aligned.apk"
+          else
+            cp android/app/build/outputs/apk/debug/app-debug.apk "out/fetros-${LABEL}-debug-key.apk"
+          fi
+          ls -la out
+
+      - name: Upload the APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fetros-apk
+          path: out/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    needs: build-apk
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download the APK
+        uses: actions/download-artifact@v4
+        with:
+          name: fetros-apk
+          path: out
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          FILE="$(ls out/*.apk | head -n 1)"
+          if [[ "$FILE" == *debug-key* ]]; then
+            NOTES="نسخه‌ی آزمایشی اندروید (با کلید دیباگ). برای به‌روزرسانی‌های پایدار، کلید امضای ثابت را در Secrets تنظیم کنید."
+            PRE="--prerelease"
+          else
+            NOTES="نسخه‌ی اندروید فطرس. فایل APK را دانلود کنید و روی گوشی نصب کنید."
+            PRE=""
+          fi
+          # The release may already exist (created by hand on the Releases page before the tag build).
+          if gh release view "$TAG" --repo "$REPO" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$FILE" --repo "$REPO" --clobber
+          else
+            gh release create "$TAG" "$FILE" --repo "$REPO" --title "فطرس $TAG" --notes "$NOTES" $PRE
+          fi

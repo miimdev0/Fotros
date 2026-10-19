@@ -19,7 +19,7 @@
   'use strict';
 
   var NS = global.FETROS = global.FETROS || {};
-  var APP_VERSION = '1.0.0'; // keep in sync with CACHE_VERSION in sw.js
+  var APP_VERSION = '3.0.0'; // keep in sync with CACHE_VERSION in sw.js
   NS.APP_VERSION = APP_VERSION;
 
   var UI = NS.UI;
@@ -34,7 +34,8 @@
     dhikr: { nav: 'tools' },
     qibla: { nav: 'tools' },
     meds: { nav: 'tools' },
-    weather: { nav: 'tools' }
+    weather: { nav: 'tools' },
+    search: { nav: 'tools' }
   };
   var FAB_HIDDEN = { settings: true, dhikr: true, qibla: true };
 
@@ -120,6 +121,8 @@
 
   // Refreshes the current route without an entrance animation.
   function refresh() {
+    // Any screen refresh follows a data change, so the OS alerts may need re-planning.
+    if (NS.Native) NS.Native.requestSync();
     show(false);
   }
 
@@ -133,12 +136,14 @@
 
   function applyAppearance() {
     var s = UI.settings();
+    if (NS.Calendar && NS.Calendar.setHijriMethod) NS.Calendar.setHijriMethod(s.hijriMethod);
     var root = doc.documentElement;
     var systemDark = !!(global.matchMedia && global.matchMedia('(prefers-color-scheme: dark)').matches);
     var dark = s.theme === 'dark' || (s.theme === 'system' && systemDark);
     root.setAttribute('data-theme', dark ? 'dark' : 'light');
     root.setAttribute('data-accent', s.accent);
     root.setAttribute('data-motion', s.motion);
+    root.setAttribute('data-text', s.textSize);
     var meta = doc.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', dark ? '#101114' : '#FFF8EA');
   }
@@ -268,10 +273,35 @@
     return Promise.resolve();
   }
 
+  var BACKUP_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
+
+  // Gently suggests a backup once a week, at most once a day, and only when there is data to save.
+  function checkBackup() {
+    var s = UI.settings();
+    if (!s.backupReminder) return Promise.resolve();
+    var rt = NS.Store.getRuntime();
+    var now = Date.now();
+    var today = UI.localIsoDate(now);
+    if (rt.backupNoticeDay === today) return Promise.resolve();
+    if (rt.lastExportAt && now - rt.lastExportAt < BACKUP_EVERY_MS) return Promise.resolve();
+    return Promise.all([NS.Store.getAll('tasks'), NS.Store.getAll('notes'), NS.Store.getAll('events'), NS.Store.getAll('reminders')])
+      .then(function (r) {
+        var count = r[0].length + r[1].length + r[2].length + r[3].length;
+        if (!count) return;
+        var msg = rt.lastExportAt
+          ? 'بیش از یک هفته از آخرین پشتیبان گذشته است. از «تنظیمات» یک فایل پشتیبان بگیرید.'
+          : 'هنوز پشتیبان نگرفته‌اید. از «تنظیمات» یک فایل پشتیبان بگیرید.';
+        UI.toast(msg, { type: 'info', timeout: 9000 });
+        NS.Store.setRuntime({ backupNoticeDay: today });
+      });
+  }
+
   function runChecks() {
     return Promise.all([
       NS.Tools.tick().catch(function (e) { console.warn(e); }),
-      checkPrayers().catch(function (e) { console.warn(e); })
+      checkPrayers().catch(function (e) { console.warn(e); }),
+      checkBackup().catch(function (e) { console.warn(e); }),
+      NS.Native.maybeSync().catch(function (e) { console.warn(e); })
     ]);
   }
 
@@ -340,6 +370,13 @@
       '<span><span class="toggle-title">' + UI.esc(label) + '</span>' + (hint ? '<span class="small muted block">' + UI.esc(hint) + '</span>' : '') + '</span></label>';
   }
 
+  function nativePermissionText(state) {
+    if (state === 'granted') return 'اجازه داده شده';
+    if (state === 'denied') return 'مسدود شده (از تنظیمات اندروید فعال کنید)';
+    if (state === 'prompt' || state === 'prompt-with-rationale') return 'هنوز درخواست نشده';
+    return 'نامشخص';
+  }
+
   function renderSettings() {
     var s = UI.settings();
     var loc = NS.Location.resolve(s);
@@ -353,7 +390,10 @@
     var mode = NS.Store.mode();
     var modeText = mode === 'indexeddb' ? 'پایگاه‌داده‌ی مرورگر (IndexedDB)' : mode === 'localstorage' ? 'حافظه‌ی محلی مرورگر (با حجم محدود)' : 'در دسترس نیست';
     var netText = global.navigator.onLine === false ? 'آفلاین' : 'آنلاین';
-    return Promise.resolve().then(function () {
+    return NS.Native.permissionState().then(function (nativeState) {
+      var nativeLine = NS.Native.isNative()
+        ? '<p class="small muted">اعلان‌های اندروید: ' + UI.esc(nativePermissionText(nativeState)) + '</p>'
+        : '';
       return '<section class="page-head"><h1 class="page-title">تنظیمات</h1>' +
         '<p class="page-sub">ظاهر، اعلان‌ها، داده‌ها و درباره‌ی فطرس</p></section>' +
 
@@ -364,6 +404,9 @@
         '<div class="field"><label for="s-motion">شدت انیمیشن</label><select id="s-motion" data-change="setting-select" data-key="motion">' +
         selectOpts([['full', 'کامل'], ['subtle', 'کم'], ['none', 'بدون انیمیشن']], s.motion) + '</select>' +
         '<small class="hint">اگر «کاهش حرکت» در دستگاه روشن باشد، انیمیشن‌ها خودکار کم می‌شوند.</small></div>' +
+        '<div class="field"><label for="s-text">اندازه‌ی متن</label><select id="s-text" data-change="setting-select" data-key="textSize">' +
+        selectOpts([['normal', 'معمولی'], ['large', 'بزرگ'], ['xlarge', 'خیلی بزرگ']], s.textSize) + '</select>' +
+        '<small class="hint">اندازه‌ی متن اصلی را تغییر می‌دهد.</small></div>' +
         '<div class="field-row"><div class="field"><label for="s-num-fa">رقم تاریخ شمسی و قمری</label><select id="s-num-fa" data-change="setting-select" data-key="numeralsPersian">' +
         selectOpts([['fa', '۰۱۲ (فارسی)'], ['en', '012 (انگلیسی)']], s.numeralsPersian) + '</select></div>' +
         '<div class="field"><label for="s-num-en">رقم تاریخ میلادی</label><select id="s-num-en" data-change="setting-select" data-key="numeralsGregorian">' +
@@ -374,15 +417,19 @@
         '<p class="small">موقعیت فعلی: <strong>' + UI.esc(loc.name) + '</strong> · روش: ' + UI.esc(NS.Prayer.METHODS[s.method] ? NS.Prayer.METHODS[s.method].name : '') + '</p>' +
         '<div class="actions-row"><a class="btn ghost sm" href="#/prayer">تغییر شهر و روش</a></div>' +
         '<div class="field"><label for="s-hijri">تصحیح تاریخ قمری (روز)</label><select id="s-hijri" data-change="setting-select" data-key="hijriOffset">' +
-        selectOpts([[-2, '−۲ روز'], [-1, '−۱ روز'], [0, '۰ (جدولی)'], [1, '+۱ روز'], [2, '+۲ روز']], s.hijriOffset) + '</select>' +
+        selectOpts([[-2, '−۲ روز'], [-1, '−۱ روز'], [0, '۰ (پیش‌فرض)'], [1, '+۱ روز'], [2, '+۲ روز']], s.hijriOffset) + '</select>' +
+        '<small class="hint">تقویم قمری ام‌القری برای ۱۴۰۲ تا ۱۵۰۰ ق. است؛ خارج از این بازه از روش جدولی استفاده می‌شود.</small></div>' +
+        '<div class="field"><label for="s-hijri-method">روش تقویم قمری</label><select id="s-hijri-method" data-change="setting-select" data-key="hijriMethod">' +
+        selectOpts([['ummalqura', 'ام‌القری (رسمی)'], ['tabular', 'جدولی (حسابی)']], s.hijriMethod) + '</select>' +
         '<small class="hint">تاریخ قمری جدولی است. اگر رؤیت محلی یک یا دو روز دیرتر یا زودتر است، اینجا اصلاح کنید.</small></div>' +
         '</section>' +
 
         '<section class="card" aria-labelledby="s-notif"><h2 class="card-title" id="s-notif">اعلان‌ها و بازخورد</h2>' +
-        '<p class="small muted">وضعیت اجازه‌ی اعلان: ' + UI.esc(permText) + '</p>' +
+        '<p class="small muted">وضعیت اجازه‌ی اعلان: ' + UI.esc(permText) + '</p>' + nativeLine +
         '<div class="actions-row"><button type="button" class="btn ghost sm" data-action="ask-notify">درخواست اجازه‌ی اعلان</button></div>' +
         toggleRow('notifyPrayer', 'اعلان اوقات نماز', 'هنگام رسیدن وقت، وقتی برنامه باز است یا مرورگر اعلان را نشان می‌دهد.', s.notifyPrayer) +
         toggleRow('notifyReminders', 'اعلان یادآورها', 'یادآورهای ثبت‌شده هنگام زمان مقرر.', s.notifyReminders) +
+        toggleRow('backupReminder', 'یادآور پشتیبان هفتگی', 'هر هفته، وقتی برنامه باز است، یادآوری می‌شود از داده‌ها پشتیبان بگیرید.', s.backupReminder) +
         toggleRow('notifyMeds', 'یادآور دارو', 'یادآوری داخل برنامه؛ تضمین‌شده نیست.', s.notifyMeds) +
         toggleRow('azanEnabled', 'پخش اذان (فایل شما)', 'فقط وقتی برنامه باز است. فایل در بخش «اوقات شرعی» انتخاب می‌شود.', s.azanEnabled) +
         toggleRow('vibrate', 'لرزش', 'بازخورد لرزشی روی دکمه‌ها و یادآورها (اگر دستگاه پشتیبانی کند).', s.vibrate) +
@@ -401,6 +448,7 @@
         '<p class="small muted">همه‌ی اطلاعات (یادداشت، وظایف، یادآورها، رویدادها، دارو و ذکر) فقط روی این دستگاه ذخیره می‌شوند. هیچ حساب کاربری یا سرور اجباری وجود ندارد و آنالیتیکس یا تبلیغ‌دهنده‌ای نصب نشده است.</p>' +
         '<div class="actions-row">' +
         '<button type="button" class="btn ghost sm" data-action="export-data">' + UI.icon('download') + ' ذخیره‌ی پشتیبان (JSON)</button>' +
+        '<button type="button" class="btn ghost sm" data-action="export-ics">' + UI.icon('download') + ' ذخیره‌ی تقویم (ICS)</button>' +
         '<label class="btn ghost sm file-btn">' + UI.icon('upload') + ' وارد کردن پشتیبان<input type="file" accept="application/json,.json" data-change="import-file" aria-label="فایل پشتیبان"></label>' +
         '</div>' +
         '<div class="actions-row"><button type="button" class="btn danger sm" data-action="clear-data">' + UI.icon('trash') + ' پاک کردن همه‌ی داده‌های محلی</button></div>' +
@@ -445,7 +493,13 @@
     var key = el.getAttribute('data-key');
     var patch = {};
     patch[key] = el.checked;
-    if ((key === 'notifyPrayer' || key === 'notifyReminders' || key === 'notifyMeds') && el.checked &&
+    var isNotifyKey = key === 'notifyPrayer' || key === 'notifyReminders' || key === 'notifyMeds';
+    if (isNotifyKey && el.checked && NS.Native.isNative()) {
+      NS.Native.requestPermission().then(function (p) {
+        if (p !== 'granted') UI.toast('اجازه‌ی اعلان داده نشد. از تنظیمات اندروید فعال کنید.', { type: 'info' });
+      });
+    }
+    if (isNotifyKey && el.checked && !NS.Native.isNative() &&
       'Notification' in global && global.Notification.permission === 'default') {
       global.Notification.requestPermission().then(function (p) {
         if (p !== 'granted') UI.toast('اجازه‌ی اعلان داده نشد؛ اعلان‌ها داخل برنامه نشان داده می‌شوند.', { type: 'info' });
@@ -455,6 +509,7 @@
       UI.toast('اعلان در مرورگر مسدود است. از تنظیمات سایت، اجازه‌ی اعلان را فعال کنید.', { type: 'error' });
     }
     NS.Store.setSettings(patch);
+    NS.Native.requestSync();
     if (key === 'weatherEnabled' || key === 'vibrate' || key === 'dhikrSound') refresh();
   });
 
@@ -465,6 +520,12 @@
   });
 
   UI.registerAction('ask-notify', function () {
+    if (NS.Native.isNative()) {
+      return NS.Native.requestPermission().then(function (p) {
+        UI.toast(p === 'granted' ? 'اعلان‌های اندروید فعال شد.' : 'اجازه‌ی اعلان داده نشد. از تنظیمات اندروید فعال کنید.', { type: p === 'granted' ? 'success' : 'info' });
+        refresh();
+      });
+    }
     if (!('Notification' in global)) {
       UI.toast('این مرورگر اعلان سیستمی ندارد. یادآورها داخل برنامه نشان داده می‌شوند.', { type: 'info' });
       return;
@@ -481,21 +542,48 @@
     });
   });
 
+  // Saves a text file. In the Android app the system share sheet opens (the WebView cannot
+  // download blobs); in a browser the file is downloaded. Resolves true when the file was handed over.
+  function saveText(filename, text, mime) {
+    var shared = NS.Native.shareFile(filename, text);
+    if (shared) {
+      return shared.catch(function () {
+        UI.toast('اشتراک‌گذاری انجام نشد یا لغو شد.', { type: 'info' });
+        return false;
+      });
+    }
+    var blob = new global.Blob([text], { type: mime });
+    var url = global.URL.createObjectURL(blob);
+    var a = doc.createElement('a');
+    a.href = url;
+    a.download = filename;
+    doc.body.appendChild(a);
+    a.click();
+    global.setTimeout(function () {
+      global.URL.revokeObjectURL(url);
+      a.remove();
+    }, 4000);
+    return Promise.resolve(true);
+  }
+
   UI.registerAction('export-data', function () {
     return NS.Store.buildExport(APP_VERSION).then(function (obj) {
-      var blob = new global.Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
-      var url = global.URL.createObjectURL(blob);
-      var a = doc.createElement('a');
       var stamp = UI.localIsoDate(Date.now());
-      a.href = url;
-      a.download = 'fetros-backup-' + stamp + '.json';
-      doc.body.appendChild(a);
-      a.click();
-      global.setTimeout(function () {
-        global.URL.revokeObjectURL(url);
-        a.remove();
-      }, 4000);
-      UI.toast('فایل پشتیبان ساخته شد.', { type: 'success' });
+      return saveText('fetros-backup-' + stamp + '.json', JSON.stringify(obj, null, 2), 'application/json')
+        .then(function (ok) {
+          if (!ok) return;
+          NS.Store.setRuntime({ lastExportAt: Date.now() });
+          UI.toast('فایل پشتیبان ساخته شد.', { type: 'success' });
+        });
+    });
+  });
+
+  UI.registerAction('export-ics', function () {
+    return Promise.all([NS.Store.getAll('events'), NS.Store.getAll('reminders')]).then(function (res) {
+      var text = NS.Ics.build({ now: Date.now(), calendarName: 'فطرس', events: res[0], reminders: res[1] });
+      var stamp = UI.localIsoDate(Date.now());
+      return saveText('fetros-calendar-' + stamp + '.ics', text, 'text/calendar')
+        .then(function (ok) { if (ok) UI.toast('فایل تقویم ساخته شد. آن را در برنامه‌ی تقویم باز کنید.', { type: 'success' }); });
     });
   });
 
@@ -596,6 +684,10 @@
     global.addEventListener('hashchange', function () { show(true); });
     global.addEventListener('online', paintOnline);
     global.addEventListener('offline', paintOnline);
+    // Coming back to the app (Android resume or a browser tab) re-plans stale OS alerts.
+    doc.addEventListener('visibilitychange', function () {
+      if (doc.visibilityState === 'visible') NS.Native.maybeSync();
+    });
     if (global.matchMedia) {
       var mq = global.matchMedia('(prefers-color-scheme: dark)');
       var onScheme = function () { if (UI.settings().theme === 'system') applyAppearance(); };
@@ -622,7 +714,8 @@
     registerServiceWorker();
     var splashStart = Date.now();
     var reduce = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var minSplash = reduce ? 250 : 1100;
+    var minSplash = reduce ? 250 : 1400;
+    if (NS.Fx) NS.Fx.runSplash(minSplash);
 
     NS.Store.init().then(function () {
       if (NS.Store.mode() === 'none') UI.toast('ذخیره‌سازی در این مرورگر در دسترس نیست.', { type: 'error' });

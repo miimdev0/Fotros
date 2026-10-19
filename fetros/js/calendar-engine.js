@@ -164,13 +164,74 @@
     return Math.max(-2, Math.min(2, n));
   }
 
+  /* Umm al-Qura (official month table, js/data/umm-alqura.js). Used for 1402–1500 AH. */
+  var hijriMethod = 'ummalqura';
+  var uqCache = null;
+
+  function setHijriMethod(name) {
+    hijriMethod = name === 'tabular' ? 'tabular' : 'ummalqura';
+  }
+
+  function getHijriMethod() { return hijriMethod; }
+
+  function uqTable() {
+    if (uqCache) return uqCache;
+    var D = global.FETROS && global.FETROS.Data && global.FETROS.Data.ummAlQura;
+    if (!D || !D.monthBits) return null;
+    var starts = [D.anchorJdn];
+    for (var i = 0; i < D.monthBits.length; i++) {
+      starts.push(starts[i] + (D.monthBits.charAt(i) === '1' ? 30 : 29));
+    }
+    uqCache = { firstYear: D.firstYear, lastYear: D.lastYear, months: D.monthBits.length, starts: starts };
+    return uqCache;
+  }
+
+  function inUqYears(y) {
+    var U = uqTable();
+    return !!U && hijriMethod === 'ummalqura' && y >= U.firstYear && y <= U.lastYear;
+  }
+
+  // True when the Umm al-Qura table applies to this JDN.
+  function inUqJdn(jdn) {
+    var U = uqTable();
+    return !!U && hijriMethod === 'ummalqura' && jdn >= U.starts[0] && jdn < U.starts[U.months];
+  }
+
+  function uqToJdn(y, m, d) {
+    var U = uqTable();
+    var i = (y - U.firstYear) * 12 + (m - 1);
+    return U.starts[i] + d - 1;
+  }
+
+  function jdnToUq(jdn) {
+    var U = uqTable();
+    var lo = 0, hi = U.months - 1;
+    while (lo < hi) {
+      var mid = (lo + hi + 1) >> 1;
+      if (U.starts[mid] <= jdn) lo = mid; else hi = mid - 1;
+    }
+    return { y: U.firstYear + floor(lo / 12), m: (lo % 12) + 1, d: jdn - U.starts[lo] + 1 };
+  }
+
+  // Civil date to JDN for the active method. Years outside the table use the tabular rule.
+  function baseHijriToJdn(y, m, d) {
+    if (inUqYears(y)) return uqToJdn(y, m, d);
+    return hijriTabularToJdn(y, m, d);
+  }
+
+  // JDN to civil date for the active method.
+  function baseJdnToHijri(jdn) {
+    if (inUqJdn(jdn)) return jdnToUq(jdn);
+    return jdnToHijriTabular(jdn);
+  }
+
   // offset > 0 shifts the Hijri calendar later (e.g. local sighting is one day later).
   function hijriToJdn(y, m, d, offset) {
-    return hijriTabularToJdn(y, m, d) - clampHijriOffset(offset);
+    return baseHijriToJdn(y, m, d) - clampHijriOffset(offset);
   }
 
   function jdnToHijri(jdn, offset) {
-    return jdnToHijriTabular(jdn + clampHijriOffset(offset));
+    return baseJdnToHijri(jdn + clampHijriOffset(offset));
   }
 
   function hijriDaysInMonth(y, m, offset) {
@@ -334,11 +395,13 @@
 
   NS.Calendar = {
     CAL: CAL,
+    setHijriMethod: setHijriMethod,
+    getHijriMethod: getHijriMethod,
     PERSIAN_MONTHS: PERSIAN_MONTHS,
     GREGORIAN_MONTHS: GREGORIAN_MONTHS,
     HIJRI_MONTHS: HIJRI_MONTHS,
     WEEKDAYS: WEEKDAYS,
-    HIJRI_METHOD: 'tabular-civil (epoch 16 Jul 622 CE, 30-year cycle), offset applied by user setting',
+    HIJRI_METHOD: 'Umm al-Qura month table for 1402–1500 AH (js/data/umm-alqura.js); tabular civil calendar (epoch 16 Jul 622 CE) elsewhere or when chosen; offset applied by user setting',
     PERSIAN_METHOD: '33-year arithmetic with break points (-61 … 3178)',
 
     gregorianToJdn: gregorianToJdn,

@@ -25,6 +25,12 @@
   // Shows a system notification when permission is granted (desktop/Android),
   // otherwise an in-app toast. Only while the app is running in some form.
   function notify(title, body, tag) {
+    // In the Android app the OS already shows scheduled alerts (js/native.js),
+    // so the in-app check only shows a toast to avoid a duplicate notification.
+    if (global.FETROS.Native && global.FETROS.Native.isNative()) {
+      UI.toast(title + (body ? ' — ' + body : ''), { type: 'info', timeout: 6000 });
+      return Promise.resolve(null);
+    }
     var supported = 'Notification' in global;
     if (supported && global.Notification.permission === 'granted') {
       var opts = { body: body, tag: tag || 'fetros', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', renotify: false };
@@ -64,6 +70,7 @@
   /* ------------------------------ Tools index ------------------------------ */
 
   var TOOL_CARDS = [
+    { route: '#/search', icon: 'search', title: 'جستجوی سراسری', text: 'یافتن کار، یادداشت، یادآور، رویداد و دارو' },
     { route: '#/organizer/tasks', icon: 'task', title: 'وظایف و یادداشت‌ها', text: 'کارهای روزانه و یادداشت‌های سریع' },
     { route: '#/organizer/reminders', icon: 'alarm', title: 'یادآورها', text: 'زمان‌بندی یادآور با تکرار' },
     { route: '#/dhikr', icon: 'beads', title: 'تسبیح و ذکر', text: 'شمارنده‌ی ذکر با هدف و تاریخچه' },

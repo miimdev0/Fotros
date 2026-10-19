@@ -1,7 +1,7 @@
 # فطرس (FETROS)
 
 **FETROS** is a Persian-first, offline-capable calendar and daily companion. It runs as a
-website, can be installed on an Android phone like an app, and can be packaged as a debug APK.
+website, can be installed on an Android phone like an app, and can be built as an Android APK.
 
 - Persian (شمسی), Gregorian (میلادی) and Hijri (قمری) calendars, with conversion and month views
 - Sample holiday and occasion list (clearly marked as sample data)
@@ -12,13 +12,17 @@ website, can be installed on an Android phone like an app, and can be packaged a
 - Optional medication reminders (reminders only, not medical advice)
 - Optional weather (Open-Meteo, no API key)
 - Settings, backup export/import, theme and accent colours, reduced-motion support
+- Adjustable text size (normal, large, very large)
+- Calendar export to `.ics` for your phone's calendar app (events, birthdays, reminders)
+- Android app: alerts scheduled with the system (best effort, see limits), the share sheet for
+  backups and calendar files, and home-screen shortcuts (prayer, reminders, calendar)
 - No accounts, no analytics, no advertising. Your data stays on your device.
 
 The interface is in Persian and laid out right-to-left. Code and comments are in English.
 
 > **Start here if you are new:** read [docs/PHONE-GUIDE.md](docs/PHONE-GUIDE.md). It explains, step by
 > step on an Android phone, how to host the site for free, install it, test it offline, and build
-> a debug APK with free tools.
+> an Android APK with free tools.
 
 ---
 
@@ -34,9 +38,11 @@ The interface is in Persian and laid out right-to-left. Code and comments are in
 - **Holidays are SAMPLE data.** `fetros/js/data/occasions.js` is a starter list. It is not an
   official calendar. Before relying on it, compare it with the official announcement for the year
   and edit the file.
-- **Notifications and Azan are best-effort.** Reminders and prayer alerts work while the app is
-  open or while the browser lets the service worker run. They are **not guaranteed** when the app
-  is closed. Android and browsers may stop timers and sounds to save battery.
+- **Notifications and Azan are best-effort.** In a browser, reminders and prayer alerts work while
+  the app is open or while the browser lets the service worker run. In the Android app, alerts for
+  the next 7 days are handed to Android, so they can show while the app is closed. Android may still
+  delay or drop them (battery saving, force stop, or a revoked permission). **No alert is guaranteed.**
+  Scheduled alerts use the phone's default sound, not your Azan file.
 - **Azan audio is your file.** The app does not ship any Azan recording. You upload an audio file
   (up to 8 MB), and it plays while the app is open. Browsers may require you to tap play first.
 - **Weather needs internet.** Data comes from [Open-Meteo](https://open-meteo.com) under the
@@ -73,14 +79,15 @@ but some features (service worker, installation) need `http://localhost` or `htt
 
 ## Tests (Node is used only for tests)
 
-The website itself does not use Node. Node 20+ runs the test suite only.
+The website itself does not use Node. Node 22.22 or newer runs the test suite only (a test
+dependency requires it).
 
 ```bash
 npm install
 npm test
 ```
 
-The suite contains 68 checks:
+The suite contains 83 checks:
 
 - `fetros/tests/calendar.test.js`: Gregorian and Persian conversion against `Date` and
   `jalaali-js` (1300–1500 AP), Nowruz dates, leap years, Hijri sanity checks.
@@ -92,6 +99,12 @@ The suite contains 68 checks:
 - `fetros/tests/data-and-assets.test.js`: city and sample-data checks, record validation, the
   manifest, icon sizes, service-worker precache coverage, a privacy scan (no analytics or
   third-party trackers), and an outbound-URL check (only Open-Meteo).
+- `fetros/tests/v2-features.test.js`: the Android alert plan (prayer times match the engine,
+  logged doses are skipped, date ranges, recurring reminders, the cap), calendar export (CRLF,
+  escaping, 75-octet folding, Persian yearly dates), the text-size setting, and the manifest shortcuts.
+- `fetros/tests/native-app.test.js`: the real page with a fake Android notification plugin. Checks
+  that alerts are scheduled and replaced, nothing is scheduled without permission, and the browser
+  path stays inactive.
 
 Not covered by automated tests: the real Android install flow, real sensors (compass), real
 audio playback, real push or background behaviour, and visual layout on physical screens. Test
@@ -112,6 +125,8 @@ js/prayer-engine.js   Solar prayer times, methods, Asr, Qibla bearing and distan
 js/storage.js         IndexedDB store with localStorage fallback, sanitising, backup
 js/location.js        City / custom / GPS location resolution
 js/ui.js              Shared UI helpers: escaping, modal sheet, toasts, action registry
+js/native.js         Android app only: system alert plan and sync, share sheet for files
+js/ics.js            Calendar export (RFC 5545 .ics)
 js/view-*.js          Home, calendar, prayer & Qibla, tools (organizer, dhikr, meds, weather)
 js/data/cities.js     29 cities with coordinates and time zones
 js/data/occasions.js  SAMPLE occasions (labelled as sample)
@@ -119,8 +134,8 @@ fonts/                Vazirmatn (SIL Open Font License 1.1, see fonts/OFL.txt)
 icons/                icon.svg (source), icon-192.png, icon-512.png
 tests/                Node test suite (not shipped as part of the app logic)
 capacitor.config.json Capacitor settings for the Android wrapper (webDir = fetros)
-.github/workflows/    android-debug-apk.yml (test + debug APK), pages.yml (website hosting)
-docs/PHONE-GUIDE.md   Beginner guide for Android: hosting, testing, debug APK
+.github/workflows/    android-apk.yml (tests, APK, GitHub Release on tags), pages.yml (website hosting)
+docs/PHONE-GUIDE.md   Beginner guide for Android: hosting, testing, installing the APK
 ```
 
 Classic `<script>` tags are used on purpose, so the site also runs from a folder with no server
@@ -139,6 +154,23 @@ and no build. Global state lives under `window.FETROS`.
 
 ---
 
+## Version 3.0: Umm al-Qura calendar, global search, backup reminder
+
+- **Hijri calendar:** the default method is now the Umm al-Qura month table for **1402–1500 AH**, in `fetros/js/data/umm-alqura.js`. It was taken from the moment-hijri package (MIT) and checked day by day against it (35,084 days, 0 mismatches). Outside that range, and when the user picks it, the app uses the tabular (arithmetic) calendar. The setting is **روش تقویم قمری** in Settings. The tabular method can differ by one day from Umm al-Qura, so the official day may still differ from either method. The offset setting still applies on top.
+- **Global search:** `#/search` (linked from the Tools page) searches tasks, notes, reminders, events and medication reminders on this device. It ignores Arabic/Persian letter variants and Latin vs Persian digits.
+- **Weekly backup reminder:** the setting **یادآور پشتیبان هفتگی** (on by default) shows a notice at most once a day while the app is open, when no backup has been saved in the last 7 days. Saving a JSON backup records the time.
+- Version 3.0.0 updates `APP_VERSION`, the service-worker cache (`fetros-cache-3.0.0`) and `package.json`.
+- Still open: the holiday data is sample only, and `fonts/Rokh.ttf` is not bundled (see the Rokh notes).
+
+---
+## Version 1.2: visual layer and the Rokh font
+
+- New motion layer in `fetros/js/fx.js`: loader counter, reveal on scroll, count-up numbers, magnetic buttons, card tilt, ripples, a sliding nav pill, pointer parallax, a scroll progress bar, the feature carousel, and the lightbox.
+- Three motion levels (کامل, کم, none), plus the OS reduced-motion preference.
+- Feature showcase data lives in `fetros/js/data/features.js`. Artwork is drawn in code (no screenshots).
+- Icon: `fetros/icons/icon.svg` (original artwork) rendered to `icon-192.png` and `icon-512.png`.
+- Display font: `fonts/Rokh.ttf` is loaded when present, with Vazirmatn as the fallback. Rokh is a paid font and is **not** bundled. See the phone guide for how to add a licensed copy.
+
 ## Licences and attribution
 
 - **Code:** original work for this project. No third-party JavaScript libraries are shipped in
@@ -149,6 +181,8 @@ and no build. Global state lives under `window.FETROS`.
   attribution. Open-Meteo's free tier is for non-commercial use. If you ever add ads, a paid
   plan, or any other revenue, you must replace the weather provider first.
 - **Sample occasions** are a starter list written for this project, not an official source.
+- **Android build dependencies** (Capacitor and its official plugins, MIT licence) are downloaded
+  by the build workflow. They are not stored in this repository.
 
 ---
 
@@ -166,18 +200,28 @@ Step-by-step instructions, including testing and the APK build, are in
 
 ---
 
-## Building an Android APK (debug, free)
+## Building the Android app (free)
 
-The workflow `.github/workflows/android-debug-apk.yml` runs the tests and builds a **debug APK** on
-GitHub's free runners. You need no computer. The APK is signed with Android's debug key, which is
-fine for your own phone and is **not** for Google Play. See the phone guide for the exact taps.
+The workflow `.github/workflows/android-apk.yml` runs the tests and builds an **APK** on GitHub's
+free runners. You need no computer.
 
+- **Every push to `main` and every pull request:** runs the tests and keeps the APK as a workflow
+  artifact (Actions tab, kept for 14 days).
+- **A version tag such as `v1.1.0`:** also publishes a **GitHub Release** with the APK attached.
+- **Signing:** if the repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+  `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` exist, the APK is signed with **your release key**.
+  Use the same key for every release, so each update installs over the previous one. Without the
+  secrets, the APK uses Android's debug key. That is fine for testing, but each build may use a
+  different key, so an update may need an uninstall first.
+
+The phone guide explains how to create the release key on your phone and add the secrets.
 This project does not publish to Google Play or the App Store.
 
 ---
 
 ## Contributing and updates
 
-- Keep `APP_VERSION` in `script.js` equal to `CACHE_VERSION` in `sw.js`. A test checks this.
+- Keep `APP_VERSION` in `script.js`, `CACHE_VERSION` in `sw.js` and `version` in `package.json` equal.
+  A test checks the first two.
 - Change the sample holidays in `fetros/js/data/occasions.js` only with official sources.
 - Run `npm test` before every commit.

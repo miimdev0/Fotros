@@ -166,6 +166,54 @@
       NS.CalendarUI.miniGrid(jdn, events) + '</section>';
   }
 
+  function heroStats(jdn, events, openCount) {
+    var ag = NS.CalendarUI.agendaOn(jdn, events);
+    var occ = ag.occasions.length + ag.events.length;
+    return '<div class="hero-stats" aria-label="خلاصه‌ی امروز">' +
+      '<div class="hero-stat"><span class="stat-num" data-count="' + openCount + '">' + UI.num(openCount) + '</span><span class="small muted">کار باز</span></div>' +
+      '<div class="hero-stat"><span class="stat-num" data-count="' + occ + '">' + UI.num(occ) + '</span><span class="small muted">مناسبت و رویداد امروز</span></div>' +
+      '</div>';
+  }
+
+  /* Feature showcase: a scroll-snap carousel. Each card opens the lightbox. */
+  function featuresSection() {
+    var list = (NS.Data && NS.Data.features) || [];
+    if (!list.length || !NS.Fx) return '';
+    var cards = list.map(function (f, i) {
+      return '<button type="button" class="feature-card tilt" data-lightbox="' + i + '" aria-label="' + UI.esc(f.title) + '؛ نمایش بزرگ">' +
+        NS.Fx.art(f.art) +
+        '<span class="fc-title">' + UI.esc(f.title) + '</span>' +
+        '<span class="fc-short">' + UI.esc(f.short) + '</span>' +
+        '<span class="fc-more">برای دیدن جزئیات ضربه بزنید</span></button>';
+    }).join('');
+    return '<section class="showcase" aria-labelledby="fx-title" data-reveal>' +
+      '<div class="card-head"><h2 class="card-title" id="fx-title">امکانات فطرس</h2>' +
+      '<span class="hint small">' + UI.num(list.length) + ' امکان اصلی</span></div>' +
+      '<div class="carousel"><div class="carousel-track" role="region" tabindex="0" aria-label="فهرست امکانات فطرس">' + cards + '</div>' +
+      '<div class="carousel-controls">' +
+      '<button type="button" class="carousel-btn" data-carousel-dir="-1" aria-label="امکان قبلی"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></button>' +
+      '<span class="carousel-hint small">با کشیدن یا دکمه‌ها جابه‌جا کنید</span>' +
+      '<button type="button" class="carousel-btn" data-carousel-dir="1" aria-label="امکان بعدی"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg></button>' +
+      '</div></div></section>';
+  }
+
+  function ctaCard() {
+    return '<section class="cta-card" aria-labelledby="cta-title" data-reveal>' +
+      '<h2 id="cta-title">فطرس را روی گوشی نصب کنید</h2>' +
+      '<p class="small">نسخه‌ی وب را مثل یک برنامه روی صفحه‌ی اصلی بیاورید. اگر دکمه‌ی نصب آماده نبود، راهنما را ببینید.</p>' +
+      '<div class="cta-actions"><button type="button" class="btn primary magnetic" data-action="install-app">نصب فطرس</button>' +
+      '<a class="btn ghost" href="#/settings">تنظیمات و پشتیبان</a></div></section>';
+  }
+
+  function footerCard() {
+    return '<footer class="site-footer" aria-label="پاورقی">' +
+      '<div class="foot-brand"><svg viewBox="0 0 512 512" aria-hidden="true" focusable="false"><use href="#fx-emblem"/></svg><span>فطرس</span></div>' +
+      '<p>تقویم شمسی، میلادی و قمری، اوقات شرعی، قبله‌نما و یادآورها؛ بدون حساب کاربری و بدون تبلیغ.</p>' +
+      '<ul><li><a href="#/settings">حریم خصوصی و پشتیبان‌گیری</a></li><li><a href="#/organizer/reminders">یادآورها</a></li>' +
+      '<li><a href="#/weather">هواشناسی</a></li><li><a href="#/prayer">اوقات شرعی</a></li></ul>' +
+      '<p class="small">نسخه ' + UI.num(NS.APP_VERSION || '') + ' · داده‌های مناسبت‌ها نمونه است و برای تأیید رسمی به منابع معتبر مراجعه کنید.</p></footer>';
+  }
+
   function render() {
     var now = new Date();
     var jdn = UI.todayJdn();
@@ -186,13 +234,15 @@
         '<div class="hero-weekday">' + UI.esc(UI.weekdayName(jdn)) + '</div>' +
         '<div class="hero-persian">' + UI.esc(UI.num(p.d) + ' ' + Cal.PERSIAN_MONTHS[p.m - 1] + ' ' + UI.num(p.y)) + '</div>' +
         '<div class="hero-sub">' + UI.esc(UI.gregorianLong(jdn)) + ' · ' + UI.esc(UI.hijriLong(jdn)) + '</div>' +
+        heroStats(jdn, events, sum.open.length) +
         '</div></section>' +
         storageNote +
         nextPrayerCard(ctx) +
         '<div class="grid-two">' + occasionsCard(jdn, events) + tasksCard(sum, todayIso) + '</div>' +
         '<div class="grid-two">' + quickNoteCard() + quickReminderCard() + '</div>' +
         weatherCard() +
-        miniCalendarCard(jdn, events);
+        miniCalendarCard(jdn, events) +
+        featuresSection() + ctaCard() + footerCard();
     });
   }
 
